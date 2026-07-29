@@ -1,0 +1,13 @@
+# heavy official manuals - fetch with skills/lsdyna-kfile/scripts/fetch_manuals.py
+skills/lsdyna-kfile/knowledge/manuals/*.pdf
+skills/lsdyna-kfile/knowledge/manuals/keyword_index.json
+
+__pycache__/
+*.pyc
+
+# generated runtime/cache files from bundled academic-search
+skills/lsdyna-kfile/vendor/**/__pycache__/
+skills/lsdyna-kfile/vendor/**/*.pyc
+skills/lsdyna-kfile/vendor/**/.cache/
+skills/lsdyna-kfile/vendor/**/.env
+skills/lsdyna-kfile/vendor/**/pybliometrics.cfg

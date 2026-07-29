@@ -1,0 +1,193 @@
+{
+  "_readme": "All values in SI (m-kg-s-Pa-K). Convert with: python scripts/units.py material <system> <name>. Values are typical literature/handbook numbers for template and feasibility work - verify against test data before production use. 'dim' must be a key of units.DIMENSIONS.",
+
+  "steel_mild": {
+    "name": "Mild steel (Q235/S235-class)", "model": "MAT_PIECEWISE_LINEAR_PLASTICITY (MAT_024)",
+    "note": "bilinear via SIGY+ETAN; add FAIL only when erosion wanted",
+    "params": {
+      "rho":  {"value": 7850,    "dim": "density"},
+      "E":    {"value": 2.1e11,  "dim": "stress"},
+      "nu":   {"value": 0.30,    "dim": "dimensionless"},
+      "sigy": {"value": 2.35e8,  "dim": "stress"},
+      "etan": {"value": 1.2e9,   "dim": "stress"}
+    }
+  },
+
+  "steel_hs_dp590": {
+    "name": "High-strength steel (DP590-class)", "model": "MAT_PIECEWISE_LINEAR_PLASTICITY (MAT_024)",
+    "note": "typical dual-phase steel; yield ~370 MPa, UTS ~590 MPa",
+    "params": {
+      "rho":  {"value": 7850,    "dim": "density"},
+      "E":    {"value": 2.1e11,  "dim": "stress"},
+      "nu":   {"value": 0.30,    "dim": "dimensionless"},
+      "sigy": {"value": 3.7e8,   "dim": "stress"},
+      "etan": {"value": 2.0e9,   "dim": "stress"}
+    }
+  },
+
+  "steel_4340_jc": {
+    "name": "AISI 4340 steel (Johnson-Cook)", "model": "MAT_JOHNSON_COOK (MAT_015) + EOS_GRUNEISEN",
+    "note": "Johnson & Cook 1983/1985 constants; use for penetration/impact with solids",
+    "params": {
+      "rho":  {"value": 7830,    "dim": "density"},
+      "G":    {"value": 7.7e10,  "dim": "stress"},
+      "E":    {"value": 2.0e11,  "dim": "stress"},
+      "nu":   {"value": 0.29,    "dim": "dimensionless"},
+      "A":    {"value": 7.92e8,  "dim": "stress"},
+      "B":    {"value": 5.10e8,  "dim": "stress"},
+      "n":    {"value": 0.26,    "dim": "dimensionless"},
+      "C":    {"value": 0.014,   "dim": "dimensionless"},
+      "m":    {"value": 1.03,    "dim": "dimensionless"},
+      "Tm":   {"value": 1793,    "dim": "temperature"},
+      "Tr":   {"value": 293,     "dim": "temperature"},
+      "epso": {"value": 1.0,     "dim": "strain_rate"},
+      "cp":   {"value": 477,     "dim": "specific_heat"},
+      "D1":   {"value": 0.05,    "dim": "dimensionless"},
+      "D2":   {"value": 3.44,    "dim": "dimensionless"},
+      "D3":   {"value": -2.12,   "dim": "dimensionless"},
+      "D4":   {"value": 0.002,   "dim": "dimensionless"},
+      "D5":   {"value": 0.61,    "dim": "dimensionless"},
+      "eos_C":     {"value": 4569, "dim": "velocity"},
+      "eos_S1":    {"value": 1.49, "dim": "dimensionless"},
+      "eos_S2":    {"value": 0.0,  "dim": "dimensionless"},
+      "eos_S3":    {"value": 0.0,  "dim": "dimensionless"},
+      "eos_gamma": {"value": 2.17, "dim": "dimensionless"},
+      "eos_a":     {"value": 0.46, "dim": "dimensionless"}
+    }
+  },
+
+  "aluminum_6061t6": {
+    "name": "Aluminum 6061-T6", "model": "MAT_PIECEWISE_LINEAR_PLASTICITY (MAT_024)",
+    "params": {
+      "rho":  {"value": 2700,    "dim": "density"},
+      "E":    {"value": 6.89e10, "dim": "stress"},
+      "nu":   {"value": 0.33,    "dim": "dimensionless"},
+      "sigy": {"value": 2.76e8,  "dim": "stress"},
+      "etan": {"value": 6.0e8,   "dim": "stress"}
+    }
+  },
+
+  "aluminum_2024t3_jc": {
+    "name": "Aluminum 2024-T3 (Johnson-Cook)", "model": "MAT_JOHNSON_COOK (MAT_015) + EOS_GRUNEISEN",
+    "note": "typical literature constants (Kay 2003 class); penetration targets",
+    "params": {
+      "rho":  {"value": 2770,    "dim": "density"},
+      "G":    {"value": 2.76e10, "dim": "stress"},
+      "E":    {"value": 7.3e10,  "dim": "stress"},
+      "nu":   {"value": 0.33,    "dim": "dimensionless"},
+      "A":    {"value": 3.69e8,  "dim": "stress"},
+      "B":    {"value": 6.84e8,  "dim": "stress"},
+      "n":    {"value": 0.73,    "dim": "dimensionless"},
+      "C":    {"value": 0.0083,  "dim": "dimensionless"},
+      "m":    {"value": 1.7,     "dim": "dimensionless"},
+      "Tm":   {"value": 775,     "dim": "temperature"},
+      "Tr":   {"value": 293,     "dim": "temperature"},
+      "epso": {"value": 1.0,     "dim": "strain_rate"},
+      "cp":   {"value": 875,     "dim": "specific_heat"},
+      "D1":   {"value": 0.13,    "dim": "dimensionless"},
+      "D2":   {"value": 0.13,    "dim": "dimensionless"},
+      "D3":   {"value": -1.5,    "dim": "dimensionless"},
+      "D4":   {"value": 0.011,   "dim": "dimensionless"},
+      "D5":   {"value": 0.0,     "dim": "dimensionless"},
+      "eos_C":     {"value": 5328,  "dim": "velocity"},
+      "eos_S1":    {"value": 1.338, "dim": "dimensionless"},
+      "eos_S2":    {"value": 0.0,   "dim": "dimensionless"},
+      "eos_S3":    {"value": 0.0,   "dim": "dimensionless"},
+      "eos_gamma": {"value": 2.0,   "dim": "dimensionless"},
+      "eos_a":     {"value": 0.48,  "dim": "dimensionless"}
+    }
+  },
+
+  "copper_ofhc_jc": {
+    "name": "OFHC copper (Johnson-Cook)", "model": "MAT_JOHNSON_COOK (MAT_015) + EOS_GRUNEISEN",
+    "params": {
+      "rho":  {"value": 8960,    "dim": "density"},
+      "G":    {"value": 4.6e10,  "dim": "stress"},
+      "E":    {"value": 1.24e11, "dim": "stress"},
+      "nu":   {"value": 0.34,    "dim": "dimensionless"},
+      "A":    {"value": 9.0e7,   "dim": "stress"},
+      "B":    {"value": 2.92e8,  "dim": "stress"},
+      "n":    {"value": 0.31,    "dim": "dimensionless"},
+      "C":    {"value": 0.025,   "dim": "dimensionless"},
+      "m":    {"value": 1.09,    "dim": "dimensionless"},
+      "Tm":   {"value": 1356,    "dim": "temperature"},
+      "Tr":   {"value": 293,     "dim": "temperature"},
+      "epso": {"value": 1.0,     "dim": "strain_rate"},
+      "cp":   {"value": 383,     "dim": "specific_heat"},
+      "eos_C":     {"value": 3940,  "dim": "velocity"},
+      "eos_S1":    {"value": 1.489, "dim": "dimensionless"},
+      "eos_S2":    {"value": 0.0,   "dim": "dimensionless"},
+      "eos_S3":    {"value": 0.0,   "dim": "dimensionless"},
+      "eos_gamma": {"value": 2.02,  "dim": "dimensionless"},
+      "eos_a":     {"value": 0.47,  "dim": "dimensionless"}
+    }
+  },
+
+  "steel_rigid": {
+    "name": "Rigid steel (tools, walls, dummies)", "model": "MAT_RIGID (MAT_020)",
+    "note": "E and nu are used for contact stiffness only; set CMO/CON constraints on the card",
+    "params": {
+      "rho":  {"value": 7850,    "dim": "density"},
+      "E":    {"value": 2.1e11,  "dim": "stress"},
+      "nu":   {"value": 0.30,    "dim": "dimensionless"}
+    }
+  },
+
+  "rubber_mooney": {
+    "name": "Natural rubber (Mooney-Rivlin, demo grade)", "model": "MAT_MOONEY-RIVLIN_RUBBER (MAT_027)",
+    "note": "A=C10, B=C01; nearly incompressible - use PR ~0.495; demo-grade constants",
+    "params": {
+      "rho":  {"value": 1100,    "dim": "density"},
+      "pr":   {"value": 0.495,   "dim": "dimensionless"},
+      "A":    {"value": 2.93e5,  "dim": "stress"},
+      "B":    {"value": 1.77e5,  "dim": "stress"}
+    }
+  },
+
+  "foam_low_density": {
+    "name": "Low-density PU foam ~50 kg/m3 (demo grade)", "model": "MAT_LOW_DENSITY_FOAM (MAT_057)",
+    "note": "card mapping: rho->RO, E->E, hu->HU, damp->DAMP; curve 'loading'->LCID (DEFINE_CURVE); TC/BETA/SHAPE leave blank for defaults",
+    "params": {
+      "rho":  {"value": 50,      "dim": "density"},
+      "E":    {"value": 1.0e6,   "dim": "stress"},
+      "hu":   {"value": 0.2,     "dim": "dimensionless"},
+      "damp": {"value": 0.1,     "dim": "dimensionless"}
+    },
+    "curves": {
+      "loading": {
+        "x_dim": "dimensionless", "y_dim": "stress",
+        "points": [[0.0, 0.0], [0.05, 2.0e4], [0.2, 4.0e4], [0.4, 6.0e4],
+                   [0.6, 1.2e5], [0.75, 3.0e5], [0.85, 1.0e6], [0.9, 2.5e6]]
+      }
+    }
+  },
+
+  "water": {
+    "name": "Water (NULL + Gruneisen)", "model": "MAT_NULL (MAT_009) + EOS_GRUNEISEN",
+    "note": "standard LS-DYNA water set; PC = small negative pressure cutoff for cavitation",
+    "params": {
+      "rho":  {"value": 998,     "dim": "density"},
+      "mu":   {"value": 1.0e-3,  "dim": "viscosity"},
+      "pc":   {"value": -1.0e4,  "dim": "stress"},
+      "eos_C":     {"value": 1480,  "dim": "velocity"},
+      "eos_S1":    {"value": 1.979, "dim": "dimensionless"},
+      "eos_S2":    {"value": 0.0,   "dim": "dimensionless"},
+      "eos_S3":    {"value": 0.0,   "dim": "dimensionless"},
+      "eos_gamma": {"value": 0.11,  "dim": "dimensionless"},
+      "eos_a":     {"value": 3.0,   "dim": "dimensionless"},
+      "eos_E0":    {"value": 0.0,   "dim": "energy_per_volume"}
+    }
+  },
+
+  "air": {
+    "name": "Air (NULL + linear polynomial ideal gas)", "model": "MAT_NULL (MAT_009) + EOS_LINEAR_POLYNOMIAL",
+    "note": "C4=C5=gamma-1=0.4; E0 = p0/(gamma-1) = 2.53e5 J/m3 at 1 atm",
+    "params": {
+      "rho":  {"value": 1.225,   "dim": "density"},
+      "eos_C4": {"value": 0.4,   "dim": "dimensionless"},
+      "eos_C5": {"value": 0.4,   "dim": "dimensionless"},
+      "eos_E0": {"value": 2.53e5, "dim": "energy_per_volume"},
+      "eos_V0": {"value": 1.0,   "dim": "dimensionless"}
+    }
+  }
+}

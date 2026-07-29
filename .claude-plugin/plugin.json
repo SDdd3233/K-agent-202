@@ -1,0 +1,8 @@
+{
+  "name": "lsdyna-kagent",
+  "description": "LS-DYNA K-file authoring agent: turns natural-language simulation requests into complete, solver-verified .k input decks (crash / drop / penetration / forming / ALE / SPH). Includes local keyword-manual lookup, material library, literature-backed physical parameter search via bundled academic-search MCP, mesh generation, static deck checking, and a run-verify-fix loop against a local LS-DYNA solver.",
+  "version": "0.3.0",
+  "author": {
+    "name": "K AGENT"
+  }
+}
