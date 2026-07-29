@@ -14,7 +14,7 @@ K-agent is a local-first agent skill and Claude Code plugin for engineering team
 
 - Converges an underspecified simulation idea into a reviewable simulation brief.
 - Builds complete keyword decks for drop, crash, penetration, forming, ALE, and SPH workflows.
-- Uses bundled templates, a material library, and an R16 keyword-manual index while targeting the documented R14.1.1 solver baseline.
+- Uses bundled templates and a material library; an R16 keyword-manual index can be fetched and generated locally while targeting the documented R14.1.1 solver baseline.
 - Generates simple plate, block, cylinder, sphere, and SPH meshes; accepts user-provided mesh includes for complex geometry.
 - Runs L0 static checks, L1 initialization trials, and L2 full runs with energy, hourglass, mass-scaling, and termination checks.
 - Routes literature-backed physical parameters through the bundled `academic-search` MCP and records evidence when used.
