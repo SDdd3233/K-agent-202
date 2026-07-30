@@ -32,7 +32,7 @@ m-kg-s (SI)。压力 Pa, 密度 kg/m^3, 能量 J。
 
 ## 网格与材料
 - 网格: 60x5x40 均匀, dx=dy=dz=0.01 m, 12000 单元 / 12546 节点。
-- 水(units.py material m-kg-s water, 禁手抄): rho=998, mu=0.001 Pa.s,
+- 水(`python "SKILL_DIR/scripts/units.py" material m-kg-s water`, 禁手抄): rho=998, mu=0.001 Pa.s,
   PC=-1e4 Pa(气蚀截断); Gruneisen C=1480, S1=1.979, gamma0=0.11, a=3.0, E0=0。
 - 真空: *MAT_VACUUM 仅需估计密度(1e-4, 比水轻 7 个量级, 仅作稳定性检查)。
 
@@ -43,7 +43,7 @@ m-kg-s (SI)。压力 Pa, 密度 kg/m^3, 能量 J。
 - **水柱大小**: *DEFINE_BOX 1 的 xmx/zmx (当前 0.15/0.25); min 方向留 -0.01
   外扩以完整覆盖边界层单元。
 - **重力**: 曲线 901 的纵坐标; 若模拟时长 >1 s 需延长曲线横坐标。
-- **材料**: 换介质时用 `python units.py material m-kg-s <名>` 重新生成
+- **材料**: 换介质时用 `python "SKILL_DIR/scripts/units.py" material m-kg-s <名>` 重新生成
   *MAT_NULL/*EOS_GRUNEISEN 参数; 若改为水+空气双流体, 把 PART 1 换成
   *MAT_NULL+*EOS_IDEAL_GAS(或 LINEAR_POLYNOMIAL) 并在 *CONTROL_ALE
   设 PREF 平衡参考压。
@@ -77,4 +77,4 @@ QM=1e-7 时降到 1.8% 且流场无肉眼可见差异; 本模板固定 QM=1e-7�
 
 ## 文件清单
 - `ale.k` — 主 deck(自包含, 无 mesh include; S-ALE 网格由求解器生成)
-- 运行: `lsdyna i=ale.k ncpu=2` 或 `python run_dyna.py ale.k --ncpu 2`
+- 运行: `lsdyna i=ale.k ncpu=2` 或 `python "SKILL_DIR/scripts/run_dyna.py" ale.k --ncpu 2`

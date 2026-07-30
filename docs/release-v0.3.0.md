@@ -5,7 +5,7 @@
 - Portable `lsdyna-kfile` skill for OpenAI Codex CLI and Claude Code.
 - Requirement convergence, unit-aware material lookup, mesh generation, static checking, solver wrapper, and result parsing.
 - Drop, crash, penetration, forming, ALE, and SPH templates.
-- Bundled academic-search integration for literature-backed physical parameters.
+- Search-only academic MCP fallback for literature-backed parameters, boundary conditions, and operating conditions; existing MCP registrations take precedence and are never overwritten.
 - Bilingual documentation, publishing safety notes, contribution guidance, and MIT licensing.
 
 ## Who should try it

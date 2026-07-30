@@ -25,7 +25,7 @@ mm-ton-s: 长度 mm, 质量 ton, 时间 s, 力 N, 应力 MPa, 密度 ton/mm3, �
 - 落差间隙: gen_mesh box 的 --origin 第三个分量 (现 5, 即块底面 z=5 mm)。改动后须同步考虑空程时间 (5 mm / 4000 mm/s ≈ 1.15 ms 含重力加速) 与 ENDTIM。
 - 板尺寸/厚度: gen_mesh plate 的 --size/--div 改平面尺寸与网格密度; 厚度改 *SECTION_SHELL 的 T1~T4。
 - 块尺寸: gen_mesh box 的 --size/--div; 密度在 *MAT_RIGID 的 RO (决定冲击质量)。
-- 材料: 用 `python scripts/units.py material mm-ton-s <名称>` 生成参数替换 MID=1 的卡, 禁止手抄换算。
+- 材料: 用 `python "SKILL_DIR/scripts/units.py" material mm-ton-s <名称>` 生成参数替换 MID=1 的卡, 禁止手抄换算。
 - 仿真时长: *CONTROL_TERMINATION 的 ENDTIM (现 3.0e-3 s); 输出间隔 *DATABASE_GLSTAT/MATSUM 的 DT=1.5e-5, D3PLOT DT=1.5e-4。注意该卡为 10 字符定宽: ENDTIM 必须恰好占满第 1~10 列, 否则后续 ENDENG/ENDMAS 会整体错位被误读 (见下"修订记录")。
 
 ## 修订记录

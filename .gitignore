@@ -5,6 +5,10 @@ skills/lsdyna-kfile/knowledge/manuals/keyword_index.json
 __pycache__/
 *.pyc
 
+# local packaging outputs and planning notes
+deliverables/
+docs/superpowers/
+
 # generated runtime/cache files from bundled academic-search
 skills/lsdyna-kfile/vendor/**/__pycache__/
 skills/lsdyna-kfile/vendor/**/*.pyc

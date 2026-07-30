@@ -25,7 +25,7 @@ mm-ton-s (长度 mm, 质量 ton, 时间 s; 力 N, 应力 MPa, 能量 mJ)。
   --pid 1 --nid0 100000 --eid0 100000 --sid0 10 -o mesh_tube.k`
   (1968 节点, 1920 四边形壳元; 周向 48 份, 轴向 40 份)
 - 材料: steel_mild (Q235 级) → *MAT_PIECEWISE_LINEAR_PLASTICITY (MAT_024) 双线性:
-  RO=7.85e-9, E=2.1e5, PR=0.3, SIGY=235, ETAN=1200 (由 `units.py material mm-ton-s steel_mild` 生成)
+  RO=7.85e-9, E=2.1e5, PR=0.3, SIGY=235, ETAN=1200 (由 `python "SKILL_DIR/scripts/units.py" material mm-ton-s steel_mild` 生成)
 - 壳单元: *SECTION_SHELL ELFORM=16 (全积分, 压溃折叠必须, 否则沙漏能超标), NIP=5, T=1.5
 
 ## 关键可调参数
@@ -38,7 +38,7 @@ mm-ton-s (长度 mm, 质量 ton, 时间 s; 力 N, 应力 MPa, 能量 mJ)。
   RIGIDWALL 不查壳厚, 无穿透问题); --div 周向≥48 保证折叠波长分辨率。改 --height 后若顶环
   节点数变(--div 第一个数), 需重生成 *ELEMENT_MASS 块(顶环节点 = nid0+nc*nz .. nid0+nc*(nz+1)-1)。
 - **壁厚**: *SECTION_SHELL T1..T4; 更厚的管压溃力上升, 压溃行程缩短。
-- **材料**: `python units.py material mm-ton-s <名>` 重新生成 *MAT 卡参数, 勿手抄换算。
+- **材料**: `python "SKILL_DIR/scripts/units.py" material mm-ton-s <名>` 重新生成 *MAT 卡参数, 勿手抄换算。
 - **接触**: 能量比异常(>1.1)时把 Optional Card A 的 SOFT 由 1 改 2 (段对段)。
 - **终止时间**: *CONTROL_TERMINATION ENDTIM (现 4.0e-3 s, 压溃约 40 mm)。
 

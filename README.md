@@ -17,7 +17,7 @@ K-agent is a local-first agent skill and Claude Code plugin for engineering team
 - Uses bundled templates and a material library; an R16 keyword-manual index can be fetched and generated locally while targeting the documented R14.1.1 solver baseline.
 - Generates simple plate, block, cylinder, sphere, and SPH meshes; accepts user-provided mesh includes for complex geometry.
 - Runs L0 static checks, L1 initialization trials, and L2 full runs with energy, hourglass, mass-scaling, and termination checks.
-- Routes literature-backed physical parameters through the bundled `academic-search` MCP and records evidence when used.
+- Searches literature for material parameters, boundary conditions, and operating conditions through `academic-search`, recording paper titles, DOI, and applicability. Existing MCP registrations are reused; the internal fallback is registered only when needed.
 
 ## Why this exists
 
@@ -38,7 +38,7 @@ Writing a syntactically valid keyword deck is not the same as producing a useful
 
 - Python 3.8+.
 - A local LS-DYNA installation for L1/L2 solver verification. The default configuration targets ANSYS 2024R2 / LS-DYNA R14.1.1.
-- `uv` for the bundled literature-search MCP. The core skill and static checker do not require an API key.
+- `uv` only when K-agent must register its internal literature-search MCP fallback. The core skill and static checker do not require an API key.
 - Optional: `pypdf` for rebuilding the keyword-manual index when the manuals are not present.
 
 ### Install for OpenAI Codex CLI
@@ -50,6 +50,9 @@ install-codex.cmd
 ```
 
 Then invoke `$lsdyna-kfile`, or describe an LS-DYNA modeling task and let the skill activate.
+The installer checks for an existing `academic-search` MCP first. When found,
+its command, path, environment, and credentials remain untouched; the internal
+fallback is registered only when the server is definitively absent.
 
 For macOS, Linux, or Git Bash:
 
@@ -61,13 +64,23 @@ bash install-codex.sh
 
 ### Install for Claude Code
 
-Use the repository as a local plugin during development:
+Initialize the MCP conditionally once:
+
+```bat
+install-claude.cmd
+```
+
+On macOS, Linux, or Git Bash, run `bash install-claude.sh`. This reuses an
+existing `academic-search` MCP without registering or overwriting another one.
+Then load the repository as a local plugin:
 
 ```bash
 claude --plugin-dir "/path/to/K-agent"
 ```
 
-Or add the local marketplace and install `lsdyna-kagent` from it. The plugin-level `.mcp.json` registers the bundled `academic-search` server.
+You can also add the local marketplace and install `lsdyna-kagent`. Run the
+same initialization script from the checkout because a static plugin MCP file
+cannot perform a conditional pre-install check.
 
 ### Configure the solver
 
@@ -90,7 +103,7 @@ python skills/lsdyna-kfile/scripts/fetch_manuals.py
 
 > Use the mm-ton-s unit system to simulate a 1 kg steel block dropped from 1 m onto a 2 mm 6061 aluminum plate. Fix the four edges, run for 5 ms, and report deformation and energy curves.
 
-The workflow selects a template, converts material values, generates the simple mesh, writes the deck, and produces a validation report. For a literature-backed parameter, it also records the source and applicability instead of silently treating an abstract-only value as verified.
+The workflow selects a template, converts material values, generates the simple mesh, writes the deck, and produces a validation report. When literature search is triggered, it automatically reports the paper title, DOI, supported engineering assumption, applicability, and whether the result contains metadata, an abstract, or a full-text location. Literature values are never presented as project measurements.
 
 ## Verification workflow
 
@@ -123,9 +136,11 @@ Solver verification depends on a locally installed solver and license. Without o
 │   ├── scripts/                 # Mesh, units, checks, solver, parsing
 │   ├── knowledge/               # Materials and error patterns
 │   ├── templates/               # Drop, crash, penetration, forming, ALE, SPH
-│   └── vendor/                  # Bundled academic-search integration
+│   └── vendor/                  # Search-only academic MCP fallback (not a separate skill)
 ├── install-codex.cmd            # Windows installer
 ├── install-codex.sh             # macOS/Linux/Git Bash installer
+├── install-claude.cmd           # Windows conditional Claude MCP setup
+├── install-claude.sh            # macOS/Linux/Git Bash Claude MCP setup
 └── docs/                        # Publishing, release, and contribution notes
 ```
 

@@ -1,14 +1,14 @@
 # LS-DYNA 常见错误与修复对照表
 
-诊断入口：`python scripts/parse_results.py <rundir>` 的 `errors` 列表给出错误号与首行描述；
-错误号可用 `python scripts/manual_index.py find <关键字>` 配合手册精读。本表按"症状 → 常见原因 → 修法"组织。
+诊断入口：`python "SKILL_DIR/scripts/parse_results.py" <rundir>` 的 `errors` 列表给出错误号与首行描述；
+错误号可用 `python "SKILL_DIR/scripts/manual_index.py" find <关键字>` 配合手册精读。本表按"症状 → 常见原因 → 修法"组织。
 
 ## 启动 / license
 
 | 症状 | 常见原因 | 修法 |
 |---|---|---|
 | `failed to get license` / `License server not responding` / 卡在 license 检查 | 并发席位用尽或网络抖动 | 等 60 s 重试（最多 5 次）；减少并行求解数 |
-| 进程秒退、run.log 几乎为空 | 求解器路径错误、非法命令行参数 | `python scripts/kagent_config.py` 检查路径；核对 i=/ncpu=/memory= 写法 |
+| 进程秒退、run.log 几乎为空 | 求解器路径错误、非法命令行参数 | `python "SKILL_DIR/scripts/kagent_config.py"` 检查路径；核对 i=/ncpu=/memory= 写法 |
 | `memory size ... is insufficient` | memory= 太小 | 提高 memory（如 200m → 500m）；MPP 是"每进程"内存 |
 
 ## 初始化阶段（L1 试算就能暴露）
@@ -20,7 +20,7 @@
 | `input error ... in keyword line` / 读卡错位 | 固定格式列宽错位（字段不是 10 列对齐；NODE 是 8+16+16+16） | 检查该卡片列宽；或该卡整行改逗号自由格式 |
 | Warning: initial penetrations | 接触双方几何初始穿透 | 留初始间隙（≥壳厚/2+壳厚/2）；或 CONTACT 卡 IGNORE=1 |
 | `part has no elements` | PART 定义了但网格 include 漏了/ PID 不匹配 | 核对 gen_mesh 的 --pid 与 *PART 卡 |
-| 质量为 0 / `zero or negative density` | 单位制不一致（如 mm-ton-s 里写了 7850） | 用 `units.py material <system> <name>` 生成参数，勿手抄 |
+| 质量为 0 / `zero or negative density` | 单位制不一致（如 mm-ton-s 里写了 7850） | 用 `python "SKILL_DIR/scripts/units.py" material <system> <name>` 生成参数，勿手抄 |
 
 ## 运行中失稳
 
@@ -36,13 +36,10 @@
 | SPH 粒子飞散/不接触 | CSLH 过小、接触没建、粒子与结构用了不同单位制假设 | *CONTROL_SPH 保持默认；接触用 AUTOMATIC_NODES_TO_SURFACE（SPH 部件作 SURFA） |
 | ALE 物质泄漏/界面模糊 | 网格太粗、对流方法阶数低 | *CONTROL_ALE METH=2（Van Leer）；加密 S-ALE 网格；检查 AMMG 定义 |
 
-## 结果虽正常但不可信（质检 WARN 的处理）
+## 质检规则
 
-| 指标 | 门槛 | 超限时 |
-|---|---|---|
-| 能量比 total/initial | 0.9 ~ 1.1 | 按上表能量条目排查；侵蚀能要单独核对 |
-| 沙漏能/峰值内能 | < 10% | 全积分单元或 IHQ=6；成形类对面内弯曲敏感，优先 ELFORM=16 |
-| 附加质量 | < 5%（准静态成形可放宽到 ~25%，但需另查 动能/内能 < 5%） | 减小 |DT2MS| 或者接受并在报告中注明 |
+阈值、工况例外和 WARN 报告要求统一见 `references/quality-gates.md`；本文件只保留错误症状、
+原因和修复动作，避免维护第二份质检表。
 
 ## 经验追加区（代理每次修复成功后按此格式追加）
 

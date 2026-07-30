@@ -7,7 +7,7 @@
     {
       "name": "lsdyna-kagent",
       "source": "./",
-      "description": "LS-DYNA K-file authoring agent with local solver verification loop and bundled academic-search MCP for literature-backed physical parameters"
+      "description": "LS-DYNA K-file authoring agent with local solver verification and reuse-first academic search for literature-backed engineering inputs"
     }
   ]
 }

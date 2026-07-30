@@ -17,7 +17,7 @@ K-agent 是一个 local-first 的智能体技能包和 Claude Code 插件，面�
 - 使用内置模板和材料库；R16 关键字手册可在本机获取并建立索引，同时以文档化的 R14.1.1 求解器基线为目标。
 - 自动生成板、块、圆柱、球和 SPH 等简单几何网格；复杂几何可接收用户提供的网格 include。
 - 执行 L0 静态检查、L1 初始化试算和 L2 全程计算，检查能量、沙漏、质量缩放和终止状态。
-- 需要文献参数时通过内置 `academic-search` MCP 检索，并记录参数证据。
+- 材料参数、边界条件或工况需要文献支撑时，通过 `academic-search` MCP 检索并记录文献名、DOI 和适用性；优先复用用户已有 MCP，仅在缺失时注册内置 fallback。
 
 ## 为什么需要它
 
@@ -38,7 +38,7 @@ K-agent 是一个 local-first 的智能体技能包和 Claude Code 插件，面�
 
 - Python 3.8+。
 - 本机 LS-DYNA，才能执行 L1/L2 求解器验证；默认目标是 ANSYS 2024R2 / LS-DYNA R14.1.1。
-- `uv`，用于内置文献检索 MCP。核心技能和静态检查不需要 API key。
+- `uv`，仅在需要注册 K-agent 内置文献检索 MCP fallback 时使用。核心技能和静态检查不需要 API key。
 - 可选：`pypdf`，用于在手册未随包提供时重建关键字手册索引。
 
 ### 安装到 OpenAI Codex CLI
@@ -50,6 +50,8 @@ install-codex.cmd
 ```
 
 之后显式调用 `$lsdyna-kfile`，或直接描述 LS-DYNA 建模需求让技能自动激活。
+安装器会先检测已有 `academic-search` MCP；命中后保留原命令、路径、环境变量和凭据配置，
+只有明确未配置时才注册 K-agent 的内部 fallback。
 
 macOS、Linux 或 Git Bash：
 
@@ -61,13 +63,21 @@ bash install-codex.sh
 
 ### 安装到 Claude Code
 
-开发或本地使用时，可以直接加载插件目录：
+先执行一次条件化 MCP 初始化：
+
+```bat
+install-claude.cmd
+```
+
+macOS、Linux 或 Git Bash 使用 `bash install-claude.sh`。该步骤会复用已有
+`academic-search` MCP，不会重复注册或覆盖。然后加载插件目录：
 
 ```bash
 claude --plugin-dir "/path/to/K-agent"
 ```
 
-也可以添加本地 marketplace 后安装 `lsdyna-kagent`。插件级 `.mcp.json` 会注册内置的 `academic-search` 服务。
+也可以添加本地 marketplace 后安装 `lsdyna-kagent`；仍需从仓库执行一次上述初始化脚本，
+因为静态插件 MCP 配置无法在安装前进行条件检测。
 
 ### 配置求解器
 
@@ -90,7 +100,7 @@ python skills/lsdyna-kfile/scripts/fetch_manuals.py
 
 > 使用 mm-ton-s 单位制，模拟 1 kg 钢块从 1 m 高度跌落到 2 mm 厚 6061 铝板。铝板四边固支，计算 5 ms，并输出变形和能量曲线。
 
-工作流会选择模板、换算材料参数、生成简单网格、组装 deck，并输出验证报告。如果使用文献参数，还会记录来源和适用性，不会把只有摘要支持的数值默认为已验证值。
+工作流会选择模板、换算材料参数、生成简单网格、组装 deck，并输出验证报告。如果触发文献检索，还会自动列出文献名、DOI、所支持的工程假设和适用性，并区分元数据、摘要与全文定位信息，不把文献值写成项目实测值。
 
 ## 验证闭环
 
@@ -123,9 +133,11 @@ python scripts/parse_results.py . --json report.json
 │   ├── scripts/                 # 网格、单位、检查、求解和解析
 │   ├── knowledge/               # 材料库和错误经验
 │   ├── templates/               # 跌落、碰撞、侵彻、成形、ALE、SPH
-│   └── vendor/                  # 内置 academic-search 集成
+│   └── vendor/                  # search-only academic MCP fallback（不是独立 skill）
 ├── install-codex.cmd            # Windows 安装脚本
 ├── install-codex.sh             # macOS/Linux/Git Bash 安装脚本
+├── install-claude.cmd           # Windows Claude MCP 条件化初始化
+├── install-claude.sh            # macOS/Linux/Git Bash Claude MCP 初始化
 └── docs/                        # 发布、安全和贡献说明
 ```
 

@@ -1,19 +1,22 @@
 """Run LS-DYNA (SMP or MPP) on a keyword deck, with timeout and status detection.
 
 Usage:
-    python run_dyna.py deck.k [--mode smp|mpp] [--precision sp|dp] [--ncpu 4]
+    python run_dyna.py deck.k [--rundir run_dir] [--mode smp|mpp] [--precision sp|dp] [--ncpu 4]
                        [--memory 100m] [--timeout 1800] [--endtim 1e-5] [--no-clean]
 
 --endtim X  : write <deck>_trial.k with *CONTROL_TERMINATION ENDTIM overridden to X
               and run that instead (L1 short initialization run).
 --endcyc N  : same, but stop after N cycles (preferred for L1: no dt estimate
               needed; combine with --endtim or use alone).
-Runs in the deck's directory. Prints a JSON result line at the end:
+Runs in the deck's directory unless --rundir is provided. When --rundir is used,
+the deck and relative *INCLUDE closure are copied there before solving, so cleanup
+never touches the source directory. Prints a JSON result line at the end:
     {"status": "normal|error|timeout|crashed", "elapsed_s": ..., "log": ..., "rundir": ...}
 Exit code: 0 only for normal termination.
 """
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 import time
@@ -85,6 +88,54 @@ def override_termination(kfile, endtim=None, endcyc=None):
     return dst
 
 
+def _include_targets(path):
+    lines = path.read_text(encoding="ascii", errors="replace").splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if line.startswith("$") or not line.upper().startswith("*INCLUDE"):
+            i += 1
+            continue
+        i += 1
+        while i < len(lines):
+            raw = lines[i].strip()
+            if not raw or raw.startswith("$"):
+                i += 1
+                continue
+            if raw.startswith("*"):
+                break
+            yield raw.strip("\"'")
+            i += 1
+            break
+
+
+def _stage_include_closure(src, src_root, dst_root, seen=None):
+    seen = seen or set()
+    src = src.resolve()
+    if src in seen or not src.is_file():
+        return
+    seen.add(src)
+    try:
+        rel = src.relative_to(src_root)
+    except ValueError:
+        rel = Path(src.name)
+    dst = dst_root / rel
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if src != dst.resolve():
+        shutil.copy2(src, dst)
+    for raw in _include_targets(src):
+        inc = Path(raw)
+        if inc.is_absolute():
+            continue
+        _stage_include_closure((src.parent / inc).resolve(), src_root, dst_root, seen)
+
+
+def stage_deck_for_rundir(kfile, rundir):
+    rundir.mkdir(parents=True, exist_ok=True)
+    _stage_include_closure(kfile, kfile.parent, rundir)
+    return rundir / kfile.name
+
+
 def detect_status(rundir, log_text):
     corpus = log_text
     for name in ("d3hsp", "messag", "mes0000"):
@@ -104,6 +155,7 @@ def detect_status(rundir, log_text):
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("kfile")
+    ap.add_argument("--rundir", help="isolated solver run directory; source deck is copied there")
     ap.add_argument("--mode", choices=["smp", "mpp"], default="smp")
     ap.add_argument("--precision", choices=["sp", "dp"], default="sp")
     ap.add_argument("--ncpu", type=int, default=4)
@@ -118,7 +170,9 @@ def main(argv):
     kfile = Path(a.kfile).resolve()
     if not kfile.is_file():
         raise SystemExit(f"deck not found: {kfile}")
-    rundir = kfile.parent
+    rundir = Path(a.rundir).resolve() if a.rundir else kfile.parent
+    if a.rundir:
+        kfile = stage_deck_for_rundir(kfile, rundir)
     if a.endtim is not None or a.endcyc is not None:
         kfile = override_termination(kfile, a.endtim, a.endcyc)
     if not a.no_clean:

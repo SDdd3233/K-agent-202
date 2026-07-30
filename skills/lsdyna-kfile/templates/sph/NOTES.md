@@ -20,12 +20,12 @@ mm-kg-ms：力 kN、应力 GPa、能量 J (kN·mm)、密度 kg/mm³、速度 mm/
 ## 网格与材料
 - 板：`gen_mesh.py plate --plane xy --origin -75 -75 0 --size 150 150 --div 30 30`；
   *SECTION_SHELL ELFORM=16(全积分) NIP=5 T=3.0。
-  材料 aluminum_6061t6 (units.py mm-kg-ms)：RO=2.7e-6, E=68.9, PR=0.33,
+  材料 aluminum_6061t6 (`python "SKILL_DIR/scripts/units.py" material mm-kg-ms aluminum_6061t6`)：RO=2.7e-6, E=68.9, PR=0.33,
   SIGY=0.276, ETAN=0.6 → *MAT_PIECEWISE_LINEAR_PLASTICITY (MAT_024 双线性用法)。
 - 水柱：`gen_mesh.py sphcyl --center 0 0 --z0 2 --radius 12.5 --height 50
   --div 6 24 --rho 9.98e-7`；粒子质量约 9.11e-6 kg/粒(脚本按体积分配写入
   *ELEMENT_SPH 第三字段)。z0=2 mm 留初始间隙避免初始穿透。
-  *SECTION_SPH CSLH=1.2 其余默认；水参数 units.py water：
+  *SECTION_SPH CSLH=1.2 其余默认；水参数由 `python "SKILL_DIR/scripts/units.py" material mm-kg-ms water` 生成：
   RO=9.98e-7, MU=1e-9, PC=-1e-5；EOS_GRUNEISEN C=1480 (声速 mm/ms), S1=1.979,
   GAMMA0=0.11, A=3.0, E0=0, V0=1.0。
 - *CONTROL_SPH 全默认 (NCBS=1, IDIM=3, NMNEIGH=150, FORM=0)。
@@ -38,7 +38,7 @@ mm-kg-ms：力 kN、应力 GPa、能量 J (kN·mm)、密度 kg/mm³、速度 mm/
   改半径需保证仍落在板内。粒子间距应接近 (radius/nr ≈ height/nz)。
 - 板尺寸/厚度：gen_mesh plate 改 --size/--div；厚度在 *SECTION_SHELL T1~T4。
   固支边界自动跟随 (节点集 15 由脚本重生成)。
-- 材料替换：`python units.py material mm-kg-ms <名称>` 生成参数后替换 MAT 卡；
+- 材料替换：`python "SKILL_DIR/scripts/units.py" material mm-kg-ms <名称>` 生成参数后替换 MAT 卡；
   板换钢等更硬材料时挠度显著减小属正常。
 - 输出频率：GLSTAT/MATSUM/NODOUT dt=0.0075，D3PLOT dt=0.075，按需缩放。
 - 若加大速度出现接触穿透/能量比升高：接触已用 SOFT=1，可再降 SFSA/SFSB 或

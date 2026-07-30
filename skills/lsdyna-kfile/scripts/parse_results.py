@@ -60,6 +60,7 @@ def parse_glstat(path):
 def collect_messages(rundir):
     """errors/warnings from d3hsp and mes* files"""
     errors, warnings = [], set()
+    diagnostics = []
     events = {"negative_volume": 0, "shooting_nodes": 0, "nan": 0}
     termination = "unknown"
     for name in ["d3hsp", "messag"] + sorted(str(p.name) for p in Path(rundir).glob("mes0*")):
@@ -72,11 +73,13 @@ def collect_messages(rundir):
                 blk = " | ".join(x.strip() for x in lines[i:i + 3] if x.strip())
                 if blk not in errors:
                     errors.append(blk)
+                diagnostics.append(make_diagnostic("error", name, i + 1, lines[i:i + 5]))
             elif "*** Warning" in line:
                 m = re.search(r"\*\*\* Warning (\d+)", line)
                 tag = m.group(1) if m else line.strip()[:60]
                 nxt = lines[i + 1].strip() if i + 1 < len(lines) else ""
                 warnings.add(f"{tag}: {nxt[:80]}")
+                diagnostics.append(make_diagnostic("warning", name, i + 1, lines[i:i + 4]))
             low = line.lower()
             # "negative volume failure criterion" is the explanatory text of the
             # informational Warning 30364 that every ERODING contact emits; only
@@ -91,7 +94,43 @@ def collect_messages(rundir):
                 termination = "normal"
             elif "E r r o r" in line and "t e r m i n a t i o n" in line:
                 termination = "error"
-    return termination, errors, sorted(warnings), events
+    return termination, errors, sorted(warnings), events, diagnostics
+
+
+def classify_message(text):
+    low = text.lower()
+    if "input" in low or "keyword" in low or "card" in low:
+        return "keyword_format"
+    if "material" in low or "mat_" in low:
+        return "material"
+    if "contact" in low or "interface" in low:
+        return "contact"
+    if "part" in low or "section" in low or "node" in low or "element" in low:
+        return "reference"
+    if "negative volume" in low or "out-of-range" in low or "nan" in low:
+        return "instability"
+    if "license" in low:
+        return "environment"
+    return "solver"
+
+
+def extract_number(text, severity):
+    pattern = r"\*\*\*\s+%s\s+(\d+)" % severity.capitalize()
+    match = re.search(pattern, text)
+    return match.group(1) if match else None
+
+
+def make_diagnostic(severity, source, line_no, evidence_lines):
+    evidence = [line.strip() for line in evidence_lines if line.strip()]
+    text = " | ".join(evidence)
+    return {
+        "severity": severity,
+        "source": source,
+        "line": line_no,
+        "number": extract_number(text, severity),
+        "category": classify_message(text),
+        "evidence": evidence[:5],
+    }
 
 
 def main(argv):
@@ -104,7 +143,7 @@ def main(argv):
     a = ap.parse_args(argv)
     rundir = Path(a.rundir)
 
-    termination, errors, warnings, events = collect_messages(rundir)
+    termination, errors, warnings, events, diagnostics = collect_messages(rundir)
 
     metrics = {}
     gates = {}
@@ -166,6 +205,7 @@ def main(argv):
         "data_missing": data_missing,
         "events": events,
         "errors": errors,
+        "diagnostics": diagnostics,
         "warning_count": len(warnings),
         "warnings": warnings[:20],
     }

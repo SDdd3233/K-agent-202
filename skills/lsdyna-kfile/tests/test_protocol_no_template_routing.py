@@ -1,0 +1,39 @@
+import unittest
+from pathlib import Path
+
+
+SKILL_DIR = Path(__file__).resolve().parents[1]
+
+
+class NoTemplateRoutingProtocolTests(unittest.TestCase):
+    def test_skill_blocks_writing_when_template_evidence_is_missing(self):
+        skill_text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("模板目录存在不等于模板可用", skill_text)
+        self.assertIn("无适用模板时，必须先完成 LS-DYNA 官方资料/官方算例检索和学术文献检索", skill_text)
+        self.assertIn("不得用普通网页搜索、既有经验或相邻模板直接替代该双链路", skill_text)
+        self.assertIn("research/literature-evidence.json", skill_text)
+
+    def test_brainstorm_protocol_requires_applicability_and_evidence_in_spec(self):
+        protocol_text = (SKILL_DIR / "references" / "brainstorm-protocol.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("四项中任一项为“不能支撑”即视为无适用模板", protocol_text)
+        self.assertIn("在双链路完成前", protocol_text)
+        self.assertIn("模板适用性判定：", protocol_text)
+        self.assertIn("`research/literature-evidence.json`：", protocol_text)
+
+    def test_literature_routing_names_explosive_welding_trigger(self):
+        routing_text = (
+            SKILL_DIR / "references" / "literature-parameter-routing.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("explosive welding", routing_text)
+        self.assertIn("interface wave", routing_text)
+        self.assertIn("template_applicability", routing_text)
+        self.assertIn("official_basis", routing_text)
+
+
+if __name__ == "__main__":
+    unittest.main()
