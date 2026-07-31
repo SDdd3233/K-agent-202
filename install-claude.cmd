@@ -14,7 +14,7 @@ if errorlevel 1 (
 echo Detecting an existing academic-search MCP before registration ...
 python "%ACADEMIC_SETUP%" ensure --client claude --server-dir "%ACADEMIC_MCP%"
 if errorlevel 1 (
-  echo [WARN] academic-search MCP was not changed; review the message above.
+  echo [ERROR] academic-search MCP setup or verification failed; installation is incomplete.
   exit /b 1
 )
 

@@ -154,7 +154,7 @@ See [docs/security-and-publishing.md](docs/security-and-publishing.md) for a pre
 
 ## Current status
 
-The repository is usable as a portable skill package. The documented solver baseline is LS-DYNA R14.1.1, while the bundled manual references are R16. Material values are representative literature or handbook values and should be replaced or calibrated with project test data for engineering decisions.
+The current release is v0.3.2. The repository is usable as a portable skill package with fail-closed MCP installation and post-registration verification. The documented solver baseline is LS-DYNA R14.1.1, while the bundled manual references are R16. Material values are representative literature or handbook values and should be replaced or calibrated with project test data for engineering decisions.
 
 ## Roadmap
 

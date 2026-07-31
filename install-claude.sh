@@ -18,7 +18,7 @@ fi
 
 echo "Detecting an existing academic-search MCP before registration ..."
 "$PYTHON_BIN" "$ACADEMIC_SETUP" ensure --client claude --server-dir "$ACADEMIC_MCP" || {
-  echo "[WARN] academic-search MCP was not changed; review the message above."
+  echo "[ERROR] academic-search MCP setup or verification failed; installation is incomplete." >&2
   exit 1
 }
 

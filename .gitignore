@@ -8,6 +8,7 @@ __pycache__/
 # local packaging outputs and planning notes
 deliverables/
 docs/superpowers/
+skills/lsdyna-kfile/.reduced/
 
 # generated runtime/cache files from bundled academic-search
 skills/lsdyna-kfile/vendor/**/__pycache__/

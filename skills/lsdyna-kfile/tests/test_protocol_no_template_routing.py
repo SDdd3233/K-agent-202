@@ -24,6 +24,24 @@ class NoTemplateRoutingProtocolTests(unittest.TestCase):
         self.assertIn("模板适用性判定：", protocol_text)
         self.assertIn("`research/literature-evidence.json`：", protocol_text)
 
+    def test_spec_confirmation_blocks_kfile_work_until_explicit_approval(self):
+        skill_text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        protocol_text = (SKILL_DIR / "references" / "brainstorm-protocol.md").read_text(
+            encoding="utf-8"
+        )
+
+        for text in (skill_text, protocol_text):
+            self.assertIn("收到用户明确同意前", text)
+            self.assertIn("不得生成、复制、修改或运行任何最终 `.k` 文件", text)
+
+    def test_skill_requires_persisted_final_delivery_report(self):
+        skill_text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("final_delivery_report.md", skill_text)
+        self.assertIn("再向用户发送一份同内容或等价摘要的“最终交付报告”", skill_text)
+        self.assertIn("在报告写入并", skill_text)
+        self.assertIn("发送前不得结束任务", skill_text)
+
     def test_literature_routing_names_explosive_welding_trigger(self):
         routing_text = (
             SKILL_DIR / "references" / "literature-parameter-routing.md"

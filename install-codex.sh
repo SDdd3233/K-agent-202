@@ -28,10 +28,13 @@ fi
 
 if [ -n "$PYTHON_BIN" ]; then
   echo "Detecting an existing academic-search MCP before registration ..."
-  "$PYTHON_BIN" "$ACADEMIC_SETUP" ensure --client codex --server-dir "$ACADEMIC_MCP" || \
-    echo "[WARN] academic-search MCP was not changed; review the message above."
+  "$PYTHON_BIN" "$ACADEMIC_SETUP" ensure --client codex --server-dir "$ACADEMIC_MCP" || {
+    echo "[ERROR] academic-search MCP setup or verification failed; installation is incomplete." >&2
+    exit 1
+  }
 else
-  echo "[WARN] python/python3 not found; skill copied, but academic-search MCP setup was skipped."
+  echo "[ERROR] python/python3 not found; academic-search MCP setup was skipped." >&2
+  exit 1
 fi
 
 cat <<EOF
