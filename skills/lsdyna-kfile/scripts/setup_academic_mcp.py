@@ -256,6 +256,10 @@ def ensure_mcp(
     if add_result.returncode != 0:
         detail = (add_result.stderr or add_result.stdout or "MCP registration failed").strip()
         return EnsureResult("error", "unchanged", "{} CLI".format(client), detail)
+    verification = detect_via_cli(client, executable, runner=runner)
+    if verification.status != "existing":
+        detail = verification.detail or "registration completed but academic-search was not visible to the CLI"
+        return EnsureResult("error", "unchanged", verification.source, detail)
     return EnsureResult("configured", "registered", "{} CLI".format(client), SERVER_NAME)
 
 

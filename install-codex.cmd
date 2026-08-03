@@ -26,13 +26,16 @@ if not exist "%ACADEMIC_MCP%\academic_search_server.py" (
 
 where python >nul 2>nul
 if errorlevel 1 (
-  echo [WARN] python command not found; skill copied, but academic-search MCP setup was skipped.
-  goto installed
+  echo [ERROR] python command not found; academic-search MCP setup was skipped.
+  exit /b 1
 )
 
 echo Detecting an existing academic-search MCP before registration ...
 python "%ACADEMIC_SETUP%" ensure --client codex --server-dir "%ACADEMIC_MCP%"
-if errorlevel 1 echo [WARN] academic-search MCP was not changed; review the message above.
+if errorlevel 1 (
+  echo [ERROR] academic-search MCP setup or verification failed; installation is incomplete.
+  exit /b 1
+)
 
 :installed
 echo.

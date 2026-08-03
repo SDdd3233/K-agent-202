@@ -63,21 +63,22 @@ bash install-codex.sh
 
 ### 安装到 Claude Code
 
-先执行一次条件化 MCP 初始化：
+从仓库目录执行一键安装脚本：
 
 ```bat
 install-claude.cmd
 ```
 
-macOS、Linux 或 Git Bash 使用 `bash install-claude.sh`。该步骤会复用已有
-`academic-search` MCP，不会重复注册或覆盖。然后加载插件目录：
+macOS、Linux 或 Git Bash 使用 `bash install-claude.sh`。脚本会复用已有
+`academic-search` MCP，将当前仓库注册为 Claude marketplace，并安装
+`lsdyna-kagent` 插件。脚本完成后重启 Claude Code。
 
-```bash
-claude --plugin-dir "/path/to/K-agent"
+等价的手动插件命令为：
+
+```text
+/plugin marketplace add LLK-LL/K-agent
+/plugin install lsdyna-kagent@lsdyna-kagent-marketplace
 ```
-
-也可以添加本地 marketplace 后安装 `lsdyna-kagent`；仍需从仓库执行一次上述初始化脚本，
-因为静态插件 MCP 配置无法在安装前进行条件检测。
 
 ### 配置求解器
 
@@ -151,7 +152,7 @@ K-agent 面向本地工程工作流。发布或分享生成文件前，请删除
 
 ## 当前状态
 
-仓库已经可以作为可移植技能包使用。文档化的求解器基线是 LS-DYNA R14.1.1，内置手册参考为 R16。材料值属于文献或手册中的代表性值，正式工程结论应使用项目实测数据替换或标定。
+当前版本为 v0.3.3。仓库可以作为支持 Codex 和 Claude 一键部署、带 MCP 安装后验证的可移植技能包使用；如果 MCP 初始化、marketplace 注册或插件安装失败，安装器会直接失败，不会把不完整安装报告为成功。文档化的求解器基线是 LS-DYNA R14.1.1，内置手册参考为 R16。材料值属于文献或手册中的代表性值，正式工程结论应使用项目实测数据替换或标定。
 
 ## 后续路线
 

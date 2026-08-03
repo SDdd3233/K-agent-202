@@ -189,6 +189,7 @@ class EnsureTests(unittest.TestCase):
                 subprocess.CompletedProcess([], 1, stdout="", stderr="not found"),
                 subprocess.CompletedProcess([], 0, stdout="No MCP servers", stderr=""),
                 subprocess.CompletedProcess([], 0, stdout="Added", stderr=""),
+                subprocess.CompletedProcess([], 0, stdout="{}", stderr=""),
             ]
         )
 
@@ -202,8 +203,12 @@ class EnsureTests(unittest.TestCase):
         )
 
         self.assertEqual(result.action, "registered")
-        self.assertEqual(runner.call_count, 3)
-        add_command = runner.call_args_list[-1].args[0]
+        self.assertEqual(runner.call_count, 4)
+        add_command = next(
+            call.args[0]
+            for call in runner.call_args_list
+            if call.args[0][:4] == ["codex", "mcp", "add", "academic-search"]
+        )
         self.assertEqual(add_command[:4], ["codex", "mcp", "add", "academic-search"])
 
     def test_unknown_cli_state_fails_closed(self):
@@ -290,6 +295,30 @@ class EnsureTests(unittest.TestCase):
         self.assertEqual(first.action, "registered")
         self.assertEqual(second.action, "reused")
         self.assertEqual(state["add_count"], 1)
+
+    def test_registration_fails_if_post_registration_verification_is_missing(self):
+        runner = Mock(
+            side_effect=[
+                subprocess.CompletedProcess([], 1, stdout="", stderr="not found"),
+                subprocess.CompletedProcess([], 0, stdout="No MCP servers", stderr=""),
+                subprocess.CompletedProcess([], 0, stdout="Added", stderr=""),
+                subprocess.CompletedProcess([], 1, stdout="", stderr="not visible"),
+                subprocess.CompletedProcess([], 0, stdout="No MCP servers", stderr=""),
+            ]
+        )
+
+        result = setup_academic_mcp.ensure_mcp(
+            client="codex",
+            server_dir=self.server_dir,
+            executable="codex",
+            config_paths=[],
+            runner=runner,
+            uv_executable="uv",
+        )
+
+        self.assertEqual(result.action, "unchanged")
+        self.assertEqual(result.status, "error")
+        self.assertEqual(runner.call_count, 5)
 
 
 if __name__ == "__main__":
