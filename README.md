@@ -64,23 +64,23 @@ bash install-codex.sh
 
 ### Install for Claude Code
 
-Initialize the MCP conditionally once:
+Run the one-click installer from the repository checkout:
 
 ```bat
 install-claude.cmd
 ```
 
-On macOS, Linux, or Git Bash, run `bash install-claude.sh`. This reuses an
-existing `academic-search` MCP without registering or overwriting another one.
-Then load the repository as a local plugin:
+On macOS, Linux, or Git Bash, run `bash install-claude.sh`. The installer reuses
+an existing `academic-search` MCP, registers this checkout as a Claude
+marketplace, and installs `lsdyna-kagent` from it. Restart Claude Code after the
+script completes.
 
-```bash
-claude --plugin-dir "/path/to/K-agent"
+The equivalent manual plugin commands are:
+
+```text
+/plugin marketplace add LLK-LL/K-agent
+/plugin install lsdyna-kagent@lsdyna-kagent-marketplace
 ```
-
-You can also add the local marketplace and install `lsdyna-kagent`. Run the
-same initialization script from the checkout because a static plugin MCP file
-cannot perform a conditional pre-install check.
 
 ### Configure the solver
 
@@ -154,7 +154,7 @@ See [docs/security-and-publishing.md](docs/security-and-publishing.md) for a pre
 
 ## Current status
 
-The current release is v0.3.2. The repository is usable as a portable skill package with fail-closed MCP installation and post-registration verification. The documented solver baseline is LS-DYNA R14.1.1, while the bundled manual references are R16. Material values are representative literature or handbook values and should be replaced or calibrated with project test data for engineering decisions.
+The current release is v0.3.3. The repository is usable as a portable skill package with one-click Codex and Claude deployment, fail-closed MCP installation, and post-registration verification. The documented solver baseline is LS-DYNA R14.1.1, while the bundled manual references are R16. Material values are representative literature or handbook values and should be replaced or calibrated with project test data for engineering decisions.
 
 ## Roadmap
 

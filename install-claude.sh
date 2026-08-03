@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Initialize the academic-search MCP used by the lsdyna-kfile Claude plugin.
+# Install the lsdyna-kfile Claude Code plugin and initialize its academic-search MCP.
 set -euo pipefail
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -22,5 +22,16 @@ echo "Detecting an existing academic-search MCP before registration ..."
   exit 1
 }
 
-echo "[OK] Claude MCP initialization complete. Existing registrations were preserved."
-echo "Restart Claude Code before using literature search."
+if ! command -v claude >/dev/null 2>&1; then
+  echo "[ERROR] Claude Code CLI not found. Install Claude Code, then rerun this script." >&2
+  exit 1
+fi
+
+echo "Registering the local Claude marketplace ..."
+claude plugin marketplace add "$PLUGIN_ROOT"
+
+echo "Installing lsdyna-kagent from the local marketplace ..."
+claude plugin install "lsdyna-kagent@lsdyna-kagent-marketplace"
+
+echo "[OK] Claude Code plugin and academic-search MCP installed."
+echo "Restart Claude Code before using lsdyna-kagent."

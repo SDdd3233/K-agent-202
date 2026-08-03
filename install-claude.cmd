@@ -1,5 +1,5 @@
 @echo off
-rem Initialize the academic-search MCP used by the lsdyna-kfile Claude plugin.
+rem Install the lsdyna-kfile Claude Code plugin and initialize its academic-search MCP.
 setlocal
 set "PLUGIN_ROOT=%~dp0"
 set "ACADEMIC_MCP=%PLUGIN_ROOT%skills\lsdyna-kfile\vendor\academic-search-mcp"
@@ -18,6 +18,27 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo [OK] Claude MCP initialization complete. Existing registrations were preserved.
-echo Restart Claude Code before using literature search.
+where claude >nul 2>nul
+if errorlevel 1 (
+  echo [ERROR] Claude Code CLI not found. Install Claude Code, then rerun this script.
+  exit /b 1
+)
+
+echo Registering the local Claude marketplace ...
+claude plugin marketplace add "%PLUGIN_ROOT%"
+if errorlevel 1 (
+  echo [ERROR] Claude marketplace registration failed.
+  exit /b 1
+)
+
+echo Installing lsdyna-kagent from the local marketplace ...
+claude plugin install "lsdyna-kagent@lsdyna-kagent-marketplace"
+if errorlevel 1 (
+  echo [ERROR] Claude plugin installation failed.
+  exit /b 1
+)
+
+echo.
+echo [OK] Claude Code plugin and academic-search MCP installed.
+echo Restart Claude Code before using lsdyna-kagent.
 exit /b 0
