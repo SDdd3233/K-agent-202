@@ -11,6 +11,13 @@ description: 依据自然语言需求编写、修改、调试、试算、解析�
 
 ## 1. 路由与环境
 
+- **模板制作模式**：用户上传主 `.k`/`.key`/`.dyn`，明确说明其要作为某类模板，并要求抽象、整理、
+  参数化或沉淀。优先执行 `references/template-authoring-protocol.md`；先运行
+  `python "SKILL_DIR/scripts/prepare_existing_deck.py" user_model.k --outdir template_build/<模板名称> --objective "制作 <模板用途> 模板"`，
+  将源文件和 include 闭包置于只读 `source/`，只在独立 `working/`（候选模板）与 `validation/` 目录工作。
+  该模式必须先完成结构化分析和模板适用性判断；会影响模板物理、参数接口或验收结论的问题，整个请求
+  最多集中询问 5 个关键问题。问题未回答前不得抽象最终模板或进行最终 L2 验证；用户确认后才写入
+  `template_spec.md`、`NOTES.md` 和模板文件。来源 deck 的验证结果不可直接替代模板候选的重新验证。
 - **已有 deck 模式**：用户提供主 `.k`/`.key`/`.dyn` 并要求修改、调试、运行或修复。跳过 §1 需求头脑风暴、
   `spec.md` 确认、模板/基准/学术门和新建流程，执行 `references/existing-deck-repair.md`；仍须做
   环境检查、`knowledge/errors.md` 预检、L0/L1/L2、§5 交付报告和经验追加。无 `spec.md` 时保持
