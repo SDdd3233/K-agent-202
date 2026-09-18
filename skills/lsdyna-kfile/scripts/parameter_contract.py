@@ -307,6 +307,159 @@ def extract_text(contract, text, source_name="inline"):
     return validate_extraction(contract, result)
 
 
+def _resolve_evidence(text, evidence):
+    if not isinstance(evidence, dict):
+        raise ContractError("candidate evidence must be an object")
+    quote = evidence.get("text")
+    if not isinstance(quote, str) or not quote:
+        raise ContractError("candidate evidence.text is required")
+    start = evidence.get("start")
+    end = evidence.get("end")
+    if start is None and end is None:
+        start = text.find(quote)
+        if start < 0:
+            raise ContractError("candidate evidence text was not found in the source")
+        if text.find(quote, start + 1) >= 0:
+            raise ContractError("candidate evidence text is not unique; provide start/end offsets")
+        end = start + len(quote)
+    if not isinstance(start, int) or not isinstance(end, int) or start < 0 or end <= start or end > len(text):
+        raise ContractError("candidate evidence start/end offsets are invalid")
+    if text[start:end] != quote:
+        raise ContractError("candidate evidence does not match the source at start/end offsets")
+    return {"text": quote, "start": start, "end": end}
+
+
+def ingest_candidates(contract, text, candidate_document, source_name="inline"):
+    """Validate agent/LLM candidates against source evidence and the whitelist.
+
+    This is the intended entry point for complex prose that the conservative
+    regex extractor cannot understand.  The intelligent layer identifies raw
+    values only; this function independently verifies evidence, units, ranges,
+    conflicts, and parameter authorization.
+    """
+    validate_contract(contract)
+    if not isinstance(text, str) or not text.strip():
+        raise ContractError("input text is empty")
+    if not isinstance(candidate_document, dict) or not isinstance(candidate_document.get("candidates"), list):
+        raise ContractError("candidate document must contain a candidates list")
+    if candidate_document.get("project_id") not in (None, contract["project_id"]):
+        raise ContractError("candidate document project_id does not match the project contract")
+
+    specs = {item["parameter_id"]: item for item in contract["parameters"]}
+    grouped = {}
+    rejected = []
+    claimed_spans = []
+    global_errors = []
+    for index, candidate in enumerate(candidate_document["candidates"]):
+        if not isinstance(candidate, dict):
+            global_errors.append(f"candidate {index} is not an object")
+            continue
+        parameter_id = candidate.get("parameter_id")
+        if parameter_id not in specs:
+            message = f"candidate {index} uses non-whitelisted parameter_id {parameter_id!r}"
+            global_errors.append(message)
+            rejected.append({"candidate": candidate, "error": message})
+            continue
+        spec = specs[parameter_id]
+        item = {
+            "raw_value": str(candidate.get("raw_value", "")),
+            "raw_unit": candidate.get("raw_unit"),
+            "extraction_method": "agent_candidate",
+        }
+        try:
+            evidence = _resolve_evidence(text, candidate.get("evidence"))
+            item["evidence"] = evidence
+            quote_folded = evidence["text"].casefold()
+            if not any(alias.casefold() in quote_folded for alias in _aliases(spec)):
+                raise ContractError("candidate evidence does not contain a declared parameter name or alias")
+            if item["raw_value"] not in evidence["text"]:
+                raise ContractError("candidate raw_value is not present verbatim in its evidence")
+            if item["raw_unit"] and str(item["raw_unit"]) not in evidence["text"]:
+                raise ContractError("candidate raw_unit is not present verbatim in its evidence")
+            value, unit, inferred = _normalize_candidate(
+                contract, spec, item["raw_value"], item["raw_unit"]
+            )
+            item.update({"normalized_value": value, "normalized_unit": unit, "unit_inferred": inferred})
+            value_offset = evidence["text"].find(item["raw_value"])
+            claim_start = evidence["start"] + value_offset
+            claim_end = claim_start + len(item["raw_value"])
+            if item["raw_unit"]:
+                unit_offset = evidence["text"].find(str(item["raw_unit"]))
+                unit_start = evidence["start"] + unit_offset
+                claim_start = min(claim_start, unit_start)
+                claim_end = max(claim_end, unit_start + len(str(item["raw_unit"])))
+            claimed_spans.append((claim_start, claim_end))
+        except (ContractError, ValueError) as exc:
+            item["error"] = str(exc)
+            if "evidence" not in item:
+                item["evidence"] = candidate.get("evidence", {})
+        grouped.setdefault(parameter_id, []).append(item)
+
+    parameters = {}
+    conflicts = []
+    for parameter_id, candidates in grouped.items():
+        spec = specs[parameter_id]
+        errors = [item["error"] for item in candidates if "error" in item]
+        valid_candidates = [item for item in candidates if "error" not in item]
+        values = []
+        for item in valid_candidates:
+            value = item["normalized_value"]
+            if not any(math.isclose(float(value), float(old), rel_tol=1e-12, abs_tol=1e-12) for old in values):
+                values.append(value)
+        if len(values) > 1:
+            message = f"{parameter_id}: conflicting normalized values {values}"
+            errors.append(message)
+            conflicts.append({"parameter_id": parameter_id, "values": values})
+        selected = valid_candidates[-1] if valid_candidates else candidates[-1]
+        record = {
+            "parameter_id": parameter_id,
+            "name": spec["name"],
+            "candidates": candidates,
+            "review_status": "pending",
+            "validation": {"valid": not errors, "errors": errors, "warnings": []},
+        }
+        if valid_candidates:
+            record["normalized_value"] = selected["normalized_value"]
+            record["normalized_unit"] = selected["normalized_unit"]
+            if selected.get("unit_inferred"):
+                record["validation"]["warnings"].append(
+                    f"{parameter_id}: unit inferred as {spec['default_input_unit']!r}"
+                )
+        parameters[parameter_id] = record
+
+    missing = [spec["parameter_id"] for spec in contract["parameters"]
+               if spec.get("required", False) and spec["parameter_id"] not in parameters]
+    global_errors.extend(f"required parameter {item!r} was not found" for item in missing)
+    unknown_items = _unknown_numeric_items(text, claimed_spans)
+    result = {
+        "schema_version": SCHEMA_VERSION,
+        "project_id": contract["project_id"],
+        "unit_system": contract["unit_system"],
+        "source": {
+            "name": source_name,
+            "length": len(text),
+            "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        },
+        "parameters": parameters,
+        "missing_required": missing,
+        "conflicts": conflicts,
+        "unknown_items": unknown_items,
+        "rejected_candidates": rejected,
+        "validation": {"valid": False, "errors": global_errors, "warnings": []},
+        "state": "extracted",
+        "extraction_method": "agent_candidates",
+    }
+    checked = validate_extraction(contract, result)
+    # validate_extraction rebuilds errors from field-level records, so retain
+    # authorization and document-shape failures collected above.
+    checked["validation"]["errors"] = list(dict.fromkeys(
+        global_errors + checked["validation"]["errors"]
+    ))
+    checked["validation"]["valid"] = not checked["validation"]["errors"]
+    checked["state"] = "pending_review" if checked["validation"]["valid"] else "validation_failed"
+    return checked
+
+
 def validate_extraction(contract, document):
     validate_contract(contract)
     result = copy.deepcopy(document)
@@ -487,6 +640,13 @@ def main(argv=None):
     extract_cmd.add_argument("--out")
     extract_cmd.add_argument("--review-out", help="write a Markdown review sheet")
 
+    ingest_cmd = sub.add_parser("ingest", help="validate agent-extracted candidates against source text")
+    ingest_cmd.add_argument("project")
+    ingest_cmd.add_argument("candidates")
+    ingest_cmd.add_argument("--text-file", required=True)
+    ingest_cmd.add_argument("--out")
+    ingest_cmd.add_argument("--review-out", help="write a Markdown review sheet")
+
     validate_cmd = sub.add_parser("validate", help="revalidate a saved extraction")
     validate_cmd.add_argument("project")
     validate_cmd.add_argument("input")
@@ -510,6 +670,11 @@ def main(argv=None):
                 text = args.text
                 source_name = "inline"
             result = extract_text(contract, text, source_name)
+        elif args.command == "ingest":
+            text_path = Path(args.text_file)
+            text = text_path.read_text(encoding="utf-8")
+            candidates = json.loads(Path(args.candidates).read_text(encoding="utf-8"))
+            result = ingest_candidates(contract, text, candidates, str(text_path.resolve()))
         else:
             document = json.loads(Path(args.input).read_text(encoding="utf-8"))
             if args.command == "validate":
@@ -517,7 +682,7 @@ def main(argv=None):
             else:
                 result = confirm_extraction(contract, document, args.reviewer, args.note)
         _write_json(result, args.out)
-        if args.command == "extract" and args.review_out:
+        if args.command in ("extract", "ingest") and args.review_out:
             Path(args.review_out).write_text(review_markdown(result), encoding="utf-8")
         return 0 if result["validation"]["valid"] else 2
     except (ContractError, OSError, json.JSONDecodeError) as exc:

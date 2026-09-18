@@ -46,6 +46,9 @@ python "SKILL_DIR/scripts/kagent_config.py"
 1. 抽取并生成审查单：
    `python "SKILL_DIR/scripts/parameter_contract.py" extract project.json --text-file request.txt --out extracted.json --review-out review.md`。
    长文本不得截断；非白名单参数不得进入结果；缺单位、越界、必填缺失或多值冲突必须失败。未匹配的带单位数值须列入审查单。
+   如果保守抽取器不能理解复杂表述，智能体可分段阅读原文并生成候选 JSON，再执行
+   `python "SKILL_DIR/scripts/parameter_contract.py" ingest project.json candidates.json --text-file request.txt --out extracted.json --review-out review.md`。
+   候选项只能含白名单 ID、原始值/单位和逐字证据；不得直接给出归一化值。证据与原文不符、证据中无参数别名、值或单位时必须失败。
 2. 向用户展示 `review.md` 中的归一化值、单位、原文证据、冲突和未知项。只有收到用户明确同意后才执行：
    `python "SKILL_DIR/scripts/parameter_contract.py" confirm project.json extracted.json --reviewer "实际审查人" --out confirmed.json`。
 3. 用受保护映射生成独立案例：

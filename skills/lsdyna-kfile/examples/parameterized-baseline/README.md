@@ -8,7 +8,19 @@ $scripts = "..\..\scripts"
 python "$scripts\parameter_contract.py" extract project.json `
   --text "装填速度为 8 m/s，摩擦系数为 0.12" `
   --out extracted.json --review-out review.md
+```
 
+若文本表达复杂，智能体可分段阅读原文并按 `candidate-extraction.example.json` 生成候选项，再由确定性校验器复核：
+
+```powershell
+python "$scripts\parameter_contract.py" ingest project.json candidate-extraction.json `
+  --text-file request.txt --out extracted.json --review-out review.md
+```
+
+候选项只能提供白名单 `parameter_id`、原始值、原始单位和逐字原文证据。校验器会验证证据位置/内容、参数别名、
+值和单位是否确实出现在证据中，再独立完成换算、范围和冲突检查。智能体不得直接提供最终 K 文件值。
+
+```powershell
 # 用户核对 review.md 后再执行确认；--reviewer 应写实际审查人。
 python "$scripts\parameter_contract.py" confirm project.json extracted.json `
   --reviewer "用户姓名" --out confirmed.json

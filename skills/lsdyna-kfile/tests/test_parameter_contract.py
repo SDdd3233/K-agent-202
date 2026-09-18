@@ -77,6 +77,41 @@ class ParameterContractTests(unittest.TestCase):
         self.assertEqual(result["unknown_items"][0]["raw_value"], "2")
         self.assertIn("did not match", result["validation"]["warnings"][0])
 
+    def test_ingests_complex_agent_candidate_with_verified_evidence(self):
+        text = "工艺说明较长。装填阶段最终采用的初始速度，按批准方案取 8 m/s，板厚仍为 2 mm；其余条件不变。"
+        candidates = {
+            "project_id": "test-project",
+            "candidates": [{
+                "parameter_id": "initial_velocity",
+                "raw_value": "8",
+                "raw_unit": "m/s",
+                "evidence": {"text": "装填阶段最终采用的初始速度，按批准方案取 8 m/s"},
+            }],
+        }
+        result = parameter_contract.ingest_candidates(contract(), text, candidates, "request.txt")
+        self.assertTrue(result["validation"]["valid"])
+        self.assertEqual(result["parameters"]["initial_velocity"]["normalized_value"], -8000.0)
+        self.assertEqual(result["extraction_method"], "agent_candidates")
+        self.assertEqual(result["unknown_items"][0]["raw_value"], "2")
+
+    def test_agent_candidate_rejects_false_evidence_and_unknown_id(self):
+        text = "初始速度最终取 8 m/s。"
+        false_evidence = {"candidates": [{
+            "parameter_id": "initial_velocity", "raw_value": "9", "raw_unit": "m/s",
+            "evidence": {"text": text},
+        }]}
+        result = parameter_contract.ingest_candidates(contract(), text, false_evidence)
+        self.assertFalse(result["validation"]["valid"])
+        self.assertIn("raw_value", " ".join(result["validation"]["errors"]))
+
+        unknown = {"candidates": [{
+            "parameter_id": "delete_contact", "raw_value": "1", "raw_unit": None,
+            "evidence": {"text": text},
+        }]}
+        result = parameter_contract.ingest_candidates(contract(), text, unknown)
+        self.assertFalse(result["validation"]["valid"])
+        self.assertIn("non-whitelisted", " ".join(result["validation"]["errors"]))
+
     def test_missing_required_parameter_fails_closed(self):
         result = parameter_contract.extract_text(contract(), "摩擦系数为 0.2")
         self.assertFalse(result["validation"]["valid"])

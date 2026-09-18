@@ -1,0 +1,21 @@
+{
+  "project_id": "example-impact-baseline",
+  "candidates": [
+    {
+      "parameter_id": "initial_velocity",
+      "raw_value": "8",
+      "raw_unit": "m/s",
+      "evidence": {
+        "text": "装填阶段最终采用的初始速度，按工艺说明取 8 m/s"
+      }
+    },
+    {
+      "parameter_id": "friction_coefficient",
+      "raw_value": "0.12",
+      "raw_unit": null,
+      "evidence": {
+        "text": "接触面的摩擦系数沿用标定值 0.12"
+      }
+    }
+  ]
+}
