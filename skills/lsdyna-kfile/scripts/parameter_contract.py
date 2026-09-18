@@ -320,6 +320,18 @@ def validate_extraction(contract, document):
     return result
 
 
+def parameter_digest(document):
+    """Return a stable digest of the values a reviewer is approving."""
+    approved = {}
+    for parameter_id, record in sorted(document.get("parameters", {}).items()):
+        approved[parameter_id] = {
+            "normalized_value": record.get("normalized_value"),
+            "normalized_unit": record.get("normalized_unit"),
+        }
+    payload = json.dumps(approved, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
 def confirm_extraction(contract, document, reviewer, note=None):
     if not reviewer or not reviewer.strip():
         raise ContractError("reviewer is required")
@@ -334,6 +346,7 @@ def confirm_extraction(contract, document, reviewer, note=None):
         "reviewer": reviewer.strip(),
         "confirmed_at": timestamp,
         "note": note or "",
+        "parameter_digest": parameter_digest(result),
     }
     result["state"] = "confirmed"
     return result

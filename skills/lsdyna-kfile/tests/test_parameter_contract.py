@@ -100,6 +100,7 @@ class ParameterContractTests(unittest.TestCase):
         confirmed = parameter_contract.confirm_extraction(contract(), valid, "测试用户", "同意提交")
         self.assertEqual(confirmed["state"], "confirmed")
         self.assertEqual(confirmed["review"]["reviewer"], "测试用户")
+        self.assertEqual(confirmed["review"]["parameter_digest"], parameter_contract.parameter_digest(confirmed))
         self.assertEqual(confirmed["parameters"]["initial_velocity"]["review_status"], "confirmed")
 
         invalid = parameter_contract.extract_text(contract(), "摩擦系数为 0.2")
