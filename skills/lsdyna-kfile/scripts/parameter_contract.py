@@ -135,16 +135,47 @@ def _unit_pattern(dimension):
     return "|".join(re.escape(name) for name in sorted(nonempty, key=len, reverse=True))
 
 
-def _candidate_pattern(spec):
+def _candidate_patterns(spec):
     aliases = "|".join(re.escape(item) for item in _aliases(spec))
     unit = _unit_pattern(spec["dimension"])
     connector = r"\s*(?:设置为|调整为|修改为|改为|设为|取值为|取值|为|是|=|:|：)?\s*"
     # Unit is optional here so that validation can produce a precise
     # missing-unit error rather than silently discarding the user's value.
-    return re.compile(
-        rf"(?P<alias>{aliases}){connector}(?P<value>{NUMBER_PATTERN})\s*(?P<unit>{unit})?",
-        re.IGNORECASE,
+    flags = re.IGNORECASE
+    return (
+        re.compile(
+            rf"(?P<alias>{aliases}){connector}(?P<value>{NUMBER_PATTERN})\s*(?P<unit>{unit})?",
+            flags,
+        ),
+        re.compile(
+            rf"(?P<value>{NUMBER_PATTERN})\s*(?P<unit>{unit})?\s*(?:的)?(?P<alias>{aliases})",
+            flags,
+        ),
     )
+
+
+def _unknown_numeric_items(text, claimed_spans):
+    units = set()
+    for dimension in UNIT_TO_SI:
+        units.update(name for name in UNIT_TO_SI[dimension] if name)
+    unit_pattern = "|".join(re.escape(name) for name in sorted(units, key=len, reverse=True))
+    pattern = re.compile(rf"(?P<value>{NUMBER_PATTERN})\s*(?P<unit>{unit_pattern})", re.IGNORECASE)
+    unknown = []
+    for match in pattern.finditer(text):
+        if any(match.start() < end and match.end() > start for start, end in claimed_spans):
+            continue
+        context_start = max(0, match.start() - 30)
+        context_end = min(len(text), match.end() + 30)
+        unknown.append({
+            "raw_value": match.group("value"),
+            "raw_unit": match.group("unit"),
+            "evidence": {
+                "text": text[context_start:context_end],
+                "start": match.start(),
+                "end": match.end(),
+            },
+        })
+    return unknown
 
 
 def _normalize_candidate(contract, spec, raw_value, raw_unit):
@@ -182,11 +213,21 @@ def extract_text(contract, text, source_name="inline"):
     conflicts = []
     global_errors = []
     global_warnings = []
+    claimed_spans = []
 
     for spec in contract["parameters"]:
         parameter_id = spec["parameter_id"]
         candidates = []
-        for match in _candidate_pattern(spec).finditer(text):
+        matches = []
+        seen_spans = set()
+        for pattern in _candidate_patterns(spec):
+            for match in pattern.finditer(text):
+                span = match.span()
+                if span not in seen_spans:
+                    matches.append(match)
+                    seen_spans.add(span)
+        for match in sorted(matches, key=lambda item: item.start()):
+            claimed_spans.append(match.span())
             evidence_start = max(0, match.start() - 30)
             evidence_end = min(len(text), match.end() + 30)
             item = {
@@ -242,6 +283,11 @@ def extract_text(contract, text, source_name="inline"):
                if spec.get("required", False) and spec["parameter_id"] not in parameters]
     for parameter_id in missing:
         global_errors.append(f"required parameter {parameter_id!r} was not found")
+    unknown_items = _unknown_numeric_items(text, claimed_spans)
+    if unknown_items:
+        global_warnings.append(
+            f"{len(unknown_items)} numeric-unit mention(s) did not match a whitelisted parameter alias"
+        )
     result = {
         "schema_version": SCHEMA_VERSION,
         "project_id": contract["project_id"],
@@ -254,7 +300,7 @@ def extract_text(contract, text, source_name="inline"):
         "parameters": parameters,
         "missing_required": missing,
         "conflicts": conflicts,
-        "unknown_items": [],
+        "unknown_items": unknown_items,
         "validation": {"valid": False, "errors": global_errors, "warnings": global_warnings},
         "state": "extracted",
     }
@@ -266,6 +312,10 @@ def validate_extraction(contract, document):
     result = copy.deepcopy(document)
     errors = []
     warnings = []
+    if result.get("unknown_items"):
+        warnings.append(
+            f"{len(result['unknown_items'])} numeric-unit mention(s) did not match a whitelisted parameter alias"
+        )
     if result.get("project_id") != contract["project_id"]:
         errors.append("project_id does not match the project contract")
     if result.get("unit_system") != contract["unit_system"]:
@@ -352,6 +402,71 @@ def confirm_extraction(contract, document, reviewer, note=None):
     return result
 
 
+def review_markdown(document):
+    """Render a compact, human-reviewable parameter sheet."""
+    lines = [
+        "# 参数抽取审查单",
+        "",
+        f"- 项目：`{document.get('project_id', '')}`",
+        f"- 单位制：`{document.get('unit_system', '')}`",
+        f"- 状态：`{document.get('state', '')}`",
+        f"- 原文长度：{document.get('source', {}).get('length', 0)} 字符",
+        f"- 原文 SHA-256：`{document.get('source', {}).get('sha256', '')}`",
+        "",
+        "| 参数 ID | 名称 | 归一化值 | 单位 | 校验 | 审查状态 |",
+        "|---|---|---:|---|---|---|",
+    ]
+    for parameter_id, record in sorted(document.get("parameters", {}).items()):
+        validation = record.get("validation", {})
+        verdict = "通过" if validation.get("valid") else "失败"
+        lines.append(
+            f"| `{parameter_id}` | {record.get('name', '')} | "
+            f"{record.get('normalized_value', '')} | {record.get('normalized_unit', '')} | "
+            f"{verdict} | {record.get('review_status', 'pending')} |"
+        )
+    if document.get("missing_required"):
+        lines.extend(["", "## 缺少的必填参数", ""])
+        lines.extend(f"- `{item}`" for item in document["missing_required"])
+    if document.get("conflicts"):
+        lines.extend(["", "## 冲突", ""])
+        for item in document["conflicts"]:
+            lines.append(f"- `{item['parameter_id']}` 出现多个值：`{item['values']}`")
+    if document.get("unknown_items"):
+        lines.extend(["", "## 未匹配到白名单的数值", ""])
+        for item in document["unknown_items"]:
+            evidence = item.get("evidence", {})
+            excerpt = str(evidence.get("text", "")).replace("`", "\\`").replace("\n", " ")
+            lines.append(
+                f"- `{item.get('raw_value', '')} {item.get('raw_unit', '')}`，"
+                f"位置 {evidence.get('start', '?')}–{evidence.get('end', '?')}：`{excerpt}`"
+            )
+    lines.extend(["", "## 原文证据", ""])
+    for parameter_id, record in sorted(document.get("parameters", {}).items()):
+        lines.append(f"### {record.get('name', parameter_id)} (`{parameter_id}`)")
+        lines.append("")
+        for candidate in record.get("candidates", []):
+            evidence = candidate.get("evidence", {})
+            excerpt = str(evidence.get("text", "")).replace("`", "\\`").replace("\n", " ")
+            lines.append(
+                f"- 位置 {evidence.get('start', '?')}–{evidence.get('end', '?')}：`{excerpt}`"
+            )
+            if candidate.get("error"):
+                lines.append(f"  - 错误：{candidate['error']}")
+        lines.append("")
+    errors = document.get("validation", {}).get("errors", [])
+    warnings = document.get("validation", {}).get("warnings", [])
+    lines.extend(["## 总体校验", ""])
+    lines.append(f"- 结论：{'通过，等待用户确认' if not errors else '失败，不允许确认'}")
+    lines.extend(f"- 错误：{item}" for item in errors)
+    lines.extend(f"- 警告：{item}" for item in warnings)
+    lines.extend([
+        "",
+        "> 只有用户核对参数、单位和原文证据后，才能执行 `confirm`；确认后的参数摘要会被锁定。",
+        "",
+    ])
+    return "\n".join(lines)
+
+
 def _write_json(data, path):
     payload = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
     if path:
@@ -370,6 +485,7 @@ def main(argv=None):
     source.add_argument("--text")
     source.add_argument("--text-file")
     extract_cmd.add_argument("--out")
+    extract_cmd.add_argument("--review-out", help="write a Markdown review sheet")
 
     validate_cmd = sub.add_parser("validate", help="revalidate a saved extraction")
     validate_cmd.add_argument("project")
@@ -401,6 +517,8 @@ def main(argv=None):
             else:
                 result = confirm_extraction(contract, document, args.reviewer, args.note)
         _write_json(result, args.out)
+        if args.command == "extract" and args.review_out:
+            Path(args.review_out).write_text(review_markdown(result), encoding="utf-8")
         return 0 if result["validation"]["valid"] else 2
     except (ContractError, OSError, json.JSONDecodeError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

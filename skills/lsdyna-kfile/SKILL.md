@@ -23,6 +23,9 @@ description: 依据自然语言需求编写、修改、调试、试算、解析�
   环境检查、`knowledge/errors.md` 预检、L0/L1/L2、§5 交付报告和经验追加。无 `spec.md` 时保持
   原 deck 的物理意图，仅解决用户目标范围的问题。先运行
   `python "SKILL_DIR/scripts/prepare_existing_deck.py" user_model.k --objective "用户目标"`，不得直接修改原文件。
+- **固定基线参数化模式**：项目已经有人工验证过的固定基线，用户只要求从纯文本中提取白名单参数、审查后写入
+  指定 K 文件字段并提交计算。执行下方“固定基线参数化流程”，不得让模型直接自由改写生产 K 文件，也不得跳过
+  参数审查、案例完整性检查或 L0 门禁。
 - **新建 deck 模式**：无可用主 deck 或要求重新建模，执行 §2-§5。
 
 会话首次运行：
@@ -34,6 +37,23 @@ python "SKILL_DIR/scripts/kagent_config.py"
 默认求解器为 `C:\Program Files\ANSYS Inc\v242\ansys\bin\winx64`（LS-DYNA R14.1.1）；用
 `LSDYNA_BIN`、`LSDYNA_MPIEXEC` 或 `~/.lsdyna-kagent.json` 覆盖。不得使用 R14 之后才支持的关键字或字段。
 凡标注 R15 及以上的功能一律回避。手册缺失时运行 `python "SKILL_DIR/scripts/fetch_manuals.py"`。
+
+### 固定基线参数化流程
+
+真实项目先复制 `examples/parameterized-baseline/`，再用已验证模型替换 `baseline/`，并在 `project.json` 中维护：
+参数白名单、别名、量纲、允许单位、范围、必填性，以及每个参数唯一的目标文件/关键词/数据行/字段和基线预期旧值。
+
+1. 抽取并生成审查单：
+   `python "SKILL_DIR/scripts/parameter_contract.py" extract project.json --text-file request.txt --out extracted.json --review-out review.md`。
+   长文本不得截断；非白名单参数不得进入结果；缺单位、越界、必填缺失或多值冲突必须失败。未匹配的带单位数值须列入审查单。
+2. 向用户展示 `review.md` 中的归一化值、单位、原文证据、冲突和未知项。只有收到用户明确同意后才执行：
+   `python "SKILL_DIR/scripts/parameter_contract.py" confirm project.json extracted.json --reviewer "实际审查人" --out confirmed.json`。
+3. 用受保护映射生成独立案例：
+   `python "SKILL_DIR/scripts/build_parameterized_case.py" project.json confirmed.json --out cases/case-001 --case-id case-001`。
+   确认摘要不匹配、基线旧值漂移、目标字段不存在或参数未映射时必须停止，不得猜测或降级为全文替换。
+4. 运行 `python "SKILL_DIR/scripts/parameter_case_workflow.py" l0 cases/case-001`。只有该案例完整性未改变且 L0 为 PASS，
+   才可运行 `python "SKILL_DIR/scripts/parameter_case_workflow.py" submit cases/case-001 --mode smp --timeout 1800 --ncpu 4`。
+   用 `status` 子命令检查案例、L0 和提交状态。提交失败不得声称计算成功。
 
 ## 2. 新建 deck：任务书与基准门
 

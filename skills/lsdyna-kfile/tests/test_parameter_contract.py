@@ -66,6 +66,17 @@ class ParameterContractTests(unittest.TestCase):
         evidence = result["parameters"]["initial_velocity"]["candidates"][0]["evidence"]
         self.assertEqual(text[evidence["start"]:evidence["end"]], "装填速度调整为 8 m/s")
 
+    def test_extracts_value_before_parameter_name(self):
+        result = parameter_contract.extract_text(contract(), "采用 8 m/s 的初始速度进行计算")
+        self.assertTrue(result["validation"]["valid"])
+        self.assertEqual(result["parameters"]["initial_velocity"]["normalized_value"], -8000.0)
+
+    def test_unmatched_physical_value_is_exposed_for_review(self):
+        result = parameter_contract.extract_text(contract(), "初始速度 8 m/s，板厚 2 mm")
+        self.assertTrue(result["validation"]["valid"])
+        self.assertEqual(result["unknown_items"][0]["raw_value"], "2")
+        self.assertIn("did not match", result["validation"]["warnings"][0])
+
     def test_missing_required_parameter_fails_closed(self):
         result = parameter_contract.extract_text(contract(), "摩擦系数为 0.2")
         self.assertFalse(result["validation"]["valid"])

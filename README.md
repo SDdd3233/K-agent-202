@@ -16,6 +16,7 @@ K-agent is a local-first agent skill and Claude Code plugin for engineering team
 - Builds complete keyword decks for drop, crash, penetration, forming, ALE, and SPH workflows.
 - Uses bundled templates and a material library; an R16 keyword-manual index can be fetched and generated locally while targeting the documented R14.1.1 solver baseline.
 - Generates simple plate, block, cylinder, sphere, and SPH meshes; accepts user-provided mesh includes for complex geometry.
+- Parameterizes a verified baseline from long-form text using a strict whitelist, unit/range/conflict validation, a human review sheet, and guarded field-level K-file mappings.
 - Runs L0 static checks, L1 initialization trials, and L2 full runs with energy, hourglass, mass-scaling, and termination checks.
 - Searches literature for material parameters, boundary conditions, and operating conditions through `academic-search`, recording paper titles, DOI, and applicability. Existing MCP registrations are reused; the internal fallback is registered only when needed.
 
@@ -104,6 +105,10 @@ python skills/lsdyna-kfile/scripts/fetch_manuals.py
 > Use the mm-ton-s unit system to simulate a 1 kg steel block dropped from 1 m onto a 2 mm 6061 aluminum plate. Fix the four edges, run for 5 ms, and report deformation and energy curves.
 
 The workflow selects a template, converts material values, generates the simple mesh, writes the deck, and produces a validation report. When literature search is triggered, it automatically reports the paper title, DOI, supported engineering assumption, applicability, and whether the result contains metadata, an abstract, or a full-text location. Literature values are never presented as project measurements.
+
+A runnable fixed-baseline text-parameterization example is available under
+[`skills/lsdyna-kfile/examples/parameterized-baseline/`](skills/lsdyna-kfile/examples/parameterized-baseline/README.md).
+It enforces extraction, human review, confirmation, guarded field mapping, L0, and solver submission in that order.
 
 ## Verification workflow
 
