@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "project_id": "example-impact-baseline",
+  "unit_system": "mm-ton-s",
+  "parameters": [
+    {
+      "parameter_id": "initial_velocity",
+      "name": "初始速度",
+      "aliases": ["装填速度", "推送速度", "冲击速度"],
+      "type": "number",
+      "dimension": "velocity",
+      "accepted_units": ["m/s", "mm/s", "km/h", "米/秒", "毫米/秒", "千米/小时"],
+      "deck_multiplier": -1.0,
+      "allowed_range": {"min": -20000.0, "max": 0.0},
+      "required": true,
+      "requires_confirmation": true
+    },
+    {
+      "parameter_id": "friction_coefficient",
+      "name": "摩擦系数",
+      "aliases": ["摩擦因数"],
+      "type": "number",
+      "dimension": "dimensionless",
+      "allowed_range": {"min": 0.0, "max": 1.0},
+      "required": false,
+      "requires_confirmation": true
+    }
+  ]
+}
